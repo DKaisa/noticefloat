@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/edgeContainer"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content">
+
+    <!-- 贴屏幕右边缘的小竖条，露出一半宽度 -->
+    <FrameLayout
+        android:id="@+id/edgeStrip"
+        android:layout_width="18dp"
+        android:layout_height="56dp"
+        android:background="@drawable/bg_bubble_edge">
+
+        <TextView
+            android:id="@+id/edgeBadge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:textColor="#FFFFFF"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:includeFontPadding="false"
+            android:gravity="center"
+            tools:text="3" />
+    </FrameLayout>
+</FrameLayout>

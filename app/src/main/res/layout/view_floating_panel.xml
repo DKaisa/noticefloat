@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/bg_panel"
+    android:padding="12dp"
+    android:elevation="6dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:text="待办"
+            android:textColor="@color/text_primary"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/btnPublish"
+            style="?attr/materialButtonOutlinedStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:minWidth="0dp"
+            android:paddingHorizontal="10dp"
+            android:text="发布"
+            android:textSize="12sp" />
+
+        <Button
+            android:id="@+id/btnDoneAll"
+            style="?attr/materialButtonOutlinedStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:layout_marginStart="4dp"
+            android:minWidth="0dp"
+            android:paddingHorizontal="10dp"
+            android:text="全完成"
+            android:textSize="12sp" />
+
+        <Button
+            android:id="@+id/btnClose"
+            style="?attr/materialButtonOutlinedStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:layout_marginStart="4dp"
+            android:minWidth="0dp"
+            android:paddingHorizontal="10dp"
+            android:text="收起"
+            android:textSize="12sp" />
+    </LinearLayout>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/list"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:maxHeight="380dp"
+        android:overScrollMode="never"
+        android:paddingTop="8dp"
+        android:scrollbars="vertical" />
+
+    <TextView
+        android:id="@+id/empty"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="24dp"
+        android:gravity="center"
+        android:text="🎉 没有待办\n点击 发布 添加"
+        android:textColor="@color/text_secondary"
+        android:textSize="13sp"
+        android:visibility="visible" />
+</LinearLayout>

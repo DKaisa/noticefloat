@@ -1,0 +1,17 @@
+# Render Blueprint - 一键部署配置（完全免费版）
+# 在 Render 网页点 "New Blueprint"，选此仓库即可自动创建服务
+# ⚠️ 免费版：无持久磁盘，SQLite 数据存 /tmp，平台重启会清空（一般几周才发生一次）
+# 想让服务不休眠：去 UptimeRobot 免费加一个 5 分钟 ping 监控 https://<你的域名>/api/health
+
+services:
+  - type: web
+    name: noticefloat-backend
+    runtime: docker
+    plan: free                    # 免费方案（每月 750 小时，空闲 15 分钟休眠）
+    region: singapore             # 新加坡节点，国内访问较快
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health
+    envVars:
+      - key: NOTICEFLOAT_DB
+        value: /tmp/noticefloat.db

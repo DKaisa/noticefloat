@@ -1,0 +1,31 @@
+# Gradle build outputs
+.gradle/
+build/
+/local.properties
+.idea/
+*.iml
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Python
+**/__pycache__/
+*.pyc
+**/.venv/
+*.egg-info/
+dist/
+*.spec
+
+# SQLite runtime DB
+*.db
+*.db-journal
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# 本地敏感/临时
+*.local
+*.log

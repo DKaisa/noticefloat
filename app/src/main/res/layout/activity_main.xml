@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="NoticeFloat"
+            android:textColor="@color/brand"
+            android:textSize="26sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="v0.1 · 让通知从群聊里跳出来"
+            android:textColor="@color/text_secondary"
+            android:textSize="13sp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:text="① 授予权限"
+            android:textColor="@color/text_primary"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
+        <TextView android:id="@+id/statusOverlay"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="10dp" android:textColor="@color/text_secondary" />
+        <Button android:id="@+id/btnOverlay"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:text="授予 悬浮窗 权限" />
+
+        <TextView android:id="@+id/statusUsage"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="10dp" android:textColor="@color/text_secondary" />
+        <Button android:id="@+id/btnUsage"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:text="授予 使用情况访问 (检测微信前台)" />
+
+        <TextView android:id="@+id/statusNotif"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="10dp" android:textColor="@color/text_secondary" />
+        <Button android:id="@+id/btnNotif"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:text="授予 通知权限" />
+
+        <TextView android:id="@+id/statusAlarm"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="10dp" android:textColor="@color/text_secondary" />
+        <Button android:id="@+id/btnAlarm"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:text="授予 精确闹钟 权限" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="② 配置"
+            android:textColor="@color/text_primary"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
+        <com.google.android.material.switchmaterial.SwitchMaterial
+            android:id="@+id/switchOnlyWeChat"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:text="仅在微信打开时显示悬浮球（有待办时始终显示）"
+            android:visibility="gone"
+            android:textSize="14sp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:text="悬浮样式"
+            android:textColor="@color/text_secondary"
+            android:textSize="13sp" />
+
+        <RadioGroup
+            android:id="@+id/rgBubbleStyle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="4dp">
+            <RadioButton
+                android:id="@+id/rbBall"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🟦 圆球"
+                android:layout_marginEnd="16dp" />
+            <RadioButton
+                android:id="@+id/rbEdge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="▏边缘条（贴屏幕右边，只显示未读数字）" />
+        </RadioGroup>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="③ 控制"
+            android:textColor="@color/text_primary"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/btnStart"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:text="启动悬浮窗服务" />
+
+        <Button
+            android:id="@+id/btnStop"
+            style="?attr/materialButtonOutlinedStyle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="停止服务" />
+
+        <Button
+            android:id="@+id/btnPublish"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="发布一条任务" />
+
+        <Button
+            android:id="@+id/btnGroups"
+            style="?attr/materialButtonOutlinedStyle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="我的群 / 加入群" />
+
+        <Button
+            android:id="@+id/btnSettings"
+            style="?attr/materialButtonOutlinedStyle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="服务器与昵称设置" />
+
+    </LinearLayout>
+</ScrollView>
