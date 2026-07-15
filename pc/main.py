@@ -153,10 +153,12 @@ def _bootstrap_server_url(cfg: dict) -> None:
 
 CONFIG = load_config()
 # 启动时静默尝试从 GitHub raw 拉一次最新 URL（不阻塞：超时 5s，失败保持原值）
-try:
-    _bootstrap_server_url(CONFIG)
-except Exception:
-    pass
+# 自测规范：设 NOTICEFLOAT_SKIP_BOOTSTRAP=1 可跳过 bootstrap，走 config.json 里的本地 URL
+if not os.environ.get("NOTICEFLOAT_SKIP_BOOTSTRAP"):
+    try:
+        _bootstrap_server_url(CONFIG)
+    except Exception:
+        pass
 
 
 # ============================================================
