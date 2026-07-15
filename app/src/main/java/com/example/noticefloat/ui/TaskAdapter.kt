@@ -33,12 +33,28 @@ class TaskAdapter(
 
     override fun onBindViewHolder(holder: VH, position: Int) {
         val t = getItem(position)
-        holder.b.title.text = t.title
-        holder.b.content.text = t.content.ifBlank { "点击标记完成 · 长按删除" }
-        holder.b.meta.text = when {
-            t.remindAt > 0 -> "⏰ ${TIME_FMT.format(Date(t.remindAt))} · ${t.publisher}"
-            else -> "· ${t.publisher}"
+        // v0.8.6：升级特殊 task 不显示"发送方"
+        val isUpdate = t.publisher == "__update__"
+        val publisher = if (isUpdate) "" else t.publisher
+
+        // 短消息合并：title 加上发送方，避免占多余一行
+        holder.b.title.text = if (publisher.isNotBlank()) "${t.title}   · $publisher" else t.title
+
+        val cnt = t.content
+        if (cnt.isBlank()) {
+            holder.b.content.visibility = android.view.View.GONE
+        } else {
+            holder.b.content.visibility = android.view.View.VISIBLE
+            holder.b.content.text = cnt
         }
+
+        if (t.remindAt > 0) {
+            holder.b.meta.visibility = android.view.View.VISIBLE
+            holder.b.meta.text = "⏰ " + TIME_FMT.format(Date(t.remindAt))
+        } else {
+            holder.b.meta.visibility = android.view.View.GONE
+        }
+
         holder.itemView.setOnClickListener { onClick(t) }
         holder.itemView.setOnLongClickListener { onLongClick(t); true }
     }

@@ -13,6 +13,10 @@ class TaskRepository(private val dao: TaskDao) {
     suspend fun delete(id: Long) = dao.delete(id)
     suspend fun update(task: Task) = dao.update(task)
 
+    /** v0.8.6：按发布者删除（升级 task 去重用） */
+    suspend fun deleteByPublisher(publisher: String) = dao.deleteByPublisher(publisher)
+    suspend fun getByPublisher(publisher: String) = dao.getByPublisher(publisher)
+
     /** 服务端推来的任务：如已存在则跳过，避免重复。返回本地 id 或 -1 */
     suspend fun upsertFromServer(task: Task): Long {
         val serverId = task.serverId ?: return -1L

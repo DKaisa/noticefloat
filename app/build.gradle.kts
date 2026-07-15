@@ -12,12 +12,11 @@ android {
         applicationId = "com.example.noticefloat"
         minSdk = 24
         targetSdk = 34
-        versionCode = 3
-        versionName = "0.3.0"
+        versionCode = 23
+        versionName = "0.8.15"
 
-        // ⬇️ 部署完 Render 后将这里改成你的公网 URL，运行 “gradlew assembleDebug” 重新编译
-        // 例："https://noticefloat-backend-abc1.onrender.com"
-        val defaultServerUrl = ""
+        // 后端公网 URL（cpolar tunnel，每 24h 变一次）
+        val defaultServerUrl = "https://2e1acc7c.r6.cpolar.cn"
         buildConfigField("String", "DEFAULT_SERVER_URL", "\"$defaultServerUrl\"")
     }
 

@@ -16,8 +16,14 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <!-- 唤醒屏幕 -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- v0.8.13：紧急消息全屏 Intent（锁屏 / 黑屏 时能弹起） -->
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- 语音输入 (v0.8) -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- v0.8.6：自动升级安装 APK -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <!-- 检测微信是否在前台：使用情况访问权限 -->
     <uses-permission
         android:name="android.permission.PACKAGE_USAGE_STATS"
@@ -28,6 +34,10 @@
 
     <queries>
         <package android:name="com.tencent.mm" />
+        <!-- 语音识别服务 (v0.8) -->
+        <intent>
+            <action android:name="android.speech.RecognitionService" />
+        </intent>
     </queries>
 
     <application
@@ -61,6 +71,33 @@
             android:name=".ui.SettingsActivity"
             android:exported="false" />
 
+        <activity
+            android:name=".ui.VoiceInputActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:theme="@style/Theme.NoticeFloat.HalfScreen" />
+
+        <activity
+            android:name=".ui.VoicePermissionActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
+        <activity
+            android:name=".ui.HelpActivity"
+            android:exported="false" />
+
+        <!-- v0.8.13：紧急消息全屏 Activity（用于 fullScreenIntent，锁屏黑屏时能自动亮屏并显示） -->
+        <activity
+            android:name=".ui.UrgentAlertActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:launchMode="singleTop"
+            android:showOnLockScreen="true"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true"
+            android:theme="@style/Theme.NoticeFloat.HalfScreen" />
+
         <service
             android:name=".service.FloatingService"
             android:exported="false"
@@ -81,6 +118,17 @@
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
         </receiver>
+
+        <!-- v0.8.6：APK 自动升级需要通过 FileProvider 暴露下载的 apk -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
 
     </application>
 </manifest>

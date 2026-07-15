@@ -8,8 +8,8 @@
     <!-- 贴屏幕右边缘的小竖条，露出一半宽度 -->
     <FrameLayout
         android:id="@+id/edgeStrip"
-        android:layout_width="18dp"
-        android:layout_height="56dp"
+        android:layout_width="27dp"
+        android:layout_height="64dp"
         android:background="@drawable/bg_bubble_edge">
 
         <TextView

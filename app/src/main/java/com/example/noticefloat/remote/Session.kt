@@ -38,6 +38,11 @@ class Session private constructor(private val prefs: SharedPreferences) {
         }
         set(value) { prefs.edit().putString(KEY_NICK, value).apply() }
 
+    /** v0.8.6 缓存的用户角色：super / admin / user；默认 user */
+    var role: String
+        get() = prefs.getString(KEY_ROLE, "user").orEmpty().ifBlank { "user" }
+        set(value) { prefs.edit().putString(KEY_ROLE, value).apply() }
+
     private fun defaultNickname(): String {
         val m = Build.MODEL?.takeIf { it.isNotBlank() } ?: "Android"
         return "$m-" + deviceId.takeLast(4)
@@ -53,6 +58,7 @@ class Session private constructor(private val prefs: SharedPreferences) {
         private const val KEY_DEVICE_ID = "device_id"
         private const val KEY_SERVER = "server_url"
         private const val KEY_NICK = "nickname"
+        private const val KEY_ROLE = "role"
 
         @Volatile private var INSTANCE: Session? = null
         fun get(context: Context): Session = INSTANCE ?: synchronized(this) {

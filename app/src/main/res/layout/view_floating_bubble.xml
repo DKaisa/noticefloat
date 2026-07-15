@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
     android:padding="4dp">
@@ -10,6 +11,20 @@
         android:layout_height="52dp"
         android:background="@drawable/bg_bubble_idle"
         android:contentDescription="悬浮球" />
+
+    <!-- v0.8：中心关键字（2–3 字） -->
+    <TextView
+        android:id="@+id/keyword"
+        android:layout_width="52dp"
+        android:layout_height="52dp"
+        android:layout_gravity="center"
+        android:gravity="center"
+        android:textColor="#FFFFFF"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:maxLines="1"
+        android:includeFontPadding="false"
+        tools:text="盐场" />
 
     <TextView
         android:id="@+id/badge"
@@ -26,6 +41,5 @@
         android:textStyle="bold"
         android:gravity="center"
         android:visibility="gone"
-        tools:text="3"
-        xmlns:tools="http://schemas.android.com/tools" />
+        tools:text="3" />
 </FrameLayout>

@@ -35,4 +35,12 @@ interface TaskDao {
 
     @Query("DELETE FROM tasks WHERE id = :id")
     suspend fun delete(id: Long)
+
+    /** v0.8.6：按发布者删除（用于升级 task 去重） */
+    @Query("DELETE FROM tasks WHERE publisher = :publisher")
+    suspend fun deleteByPublisher(publisher: String)
+
+    /** v0.8.6：按发布者查询首条（用于判断升级 task 是否已存在） */
+    @Query("SELECT * FROM tasks WHERE publisher = :publisher LIMIT 1")
+    suspend fun getByPublisher(publisher: String): Task?
 }

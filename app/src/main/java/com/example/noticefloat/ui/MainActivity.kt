@@ -13,6 +13,9 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import com.example.noticefloat.databinding.ActivityMainBinding
 import com.example.noticefloat.service.FloatingService
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
 
@@ -50,6 +53,9 @@ class MainActivity : AppCompatActivity() {
         b.btnSettings.setOnClickListener {
             startActivity(Intent(this, SettingsActivity::class.java))
         }
+        b.btnHelp.setOnClickListener {
+            startActivity(Intent(this, HelpActivity::class.java))
+        }
 
         b.switchOnlyWeChat.setOnCheckedChangeListener { _, checked ->
             getSharedPreferences(FloatingService.PREF_NAME, Context.MODE_PRIVATE)
@@ -71,6 +77,56 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         refresh()
+        // v0.8.6：刷新用户角色到 Session 缓存
+        refreshRoleAsync()
+        // v0.8.12：移除 APK 强制升级功能——不再自动检查/插入升级待办
+        // 顺手清理历史遗留的 __update__ 待办，避免旧版残留
+        cleanupLegacyUpdateTasksAsync()
+        // v0.8.7：如果从悬浮窗点击"升级"消息跳进来（历史通道），直接触发下载
+        handleUpgradeIntent(intent)
+    }
+
+    override fun onNewIntent(intent: android.content.Intent?) {
+        super.onNewIntent(intent)
+        if (intent != null) {
+            setIntent(intent)
+            handleUpgradeIntent(intent)
+        }
+    }
+
+    private fun handleUpgradeIntent(intent: android.content.Intent?) {
+        if (intent?.getBooleanExtra("trigger_update", false) == true) {
+            val url = intent.getStringExtra("upgrade_url") ?: ""
+            intent.removeExtra("trigger_update")
+            intent.removeExtra("upgrade_url")
+            if (url.isNotBlank()) {
+                UpdateChecker.downloadFromTask(this, url)
+            } else {
+                UpdateChecker.checkAndPrompt(this, silentIfNoUpdate = false)
+            }
+        }
+    }
+
+    private fun refreshRoleAsync() {
+        val session = com.example.noticefloat.remote.Session.get(this)
+        val api = com.example.noticefloat.remote.ApiClient(session)
+        Thread {
+            try {
+                val r = api.getRole()
+                val role = r.optString("role", "user")
+                session.role = role
+            } catch (_: Exception) {}
+        }.start()
+    }
+
+    /** v0.8.12：清理历史遗留的升级待办条目（__update__），避免旧版本残留在列表上 */
+    private fun cleanupLegacyUpdateTasksAsync() {
+        val app = application as? com.example.noticefloat.NoticeApp ?: return
+        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+            try {
+                app.repository.deleteByPublisher(UpdateChecker.UPDATE_PUBLISHER)
+            } catch (_: Exception) {}
+        }
     }
 
     private fun refresh() {
@@ -78,10 +134,19 @@ class MainActivity : AppCompatActivity() {
         b.switchOnlyWeChat.isChecked =
             prefs.getBoolean(FloatingService.KEY_ONLY_WHEN_WECHAT, false)
 
-        b.statusOverlay.text = "悬浮窗权限：" + granted(Settings.canDrawOverlays(this))
-        b.statusUsage.text = "微信前台检测(UsageStats)：" + granted(hasUsageAccess())
-        b.statusNotif.text = "通知权限：" + granted(hasNotifPerm())
-        b.statusAlarm.text = "精确闹钟：" + granted(hasExactAlarm())
+        val ovl = Settings.canDrawOverlays(this)
+        val usg = hasUsageAccess()
+        val ntf = hasNotifPerm()
+        val alm = hasExactAlarm()
+        b.statusOverlay.text = "悬浮窗权限：" + granted(ovl)
+        b.statusUsage.text = "微信前台检测(UsageStats)：" + granted(usg)
+        b.statusNotif.text = "通知权限：" + granted(ntf)
+        b.statusAlarm.text = "精确闹钟：" + granted(alm)
+
+        // v0.8.5：全部授权后自动隐藏权限区
+        val allGranted = ovl && ntf && alm   // usage 非强制（用户可选择不使用微信联动）
+        b.permSection.visibility = if (allGranted) android.view.View.GONE else android.view.View.VISIBLE
+        b.tvPermReady.visibility = if (allGranted) android.view.View.VISIBLE else android.view.View.GONE
     }
 
     private fun granted(b: Boolean) = if (b) "✅ 已授予" else "❌ 未授予"

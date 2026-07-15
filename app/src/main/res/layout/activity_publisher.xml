@@ -42,24 +42,50 @@
         <EditText
             android:id="@+id/etTitle"
             android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="0"
+            android:visibility="gone" />
+
+        <!-- v0.8.3 语音状态条 -->
+        <LinearLayout
+            android:id="@+id/voiceBar"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:background="@drawable/bg_input"
-            android:hint="标题（必填），例：每周例会"
-            android:padding="12dp"
-            android:inputType="text"
-            android:maxLines="1"
-            android:textColor="@color/text_primary"
-            android:textColorHint="@color/text_secondary"
-            android:textSize="14sp" />
+            android:layout_marginTop="8dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:background="#FEF3C7"
+            android:padding="10dp"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/tvVoiceStatus"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="🎙 聆听中…"
+                android:textColor="#92400E"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+            <Button
+                android:id="@+id/btnVoiceStop"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minWidth="0dp"
+                android:paddingHorizontal="12dp"
+                android:text="停止/重录"
+                android:textSize="12sp" />
+        </LinearLayout>
 
         <EditText
             android:id="@+id/etContent"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="12dp"
             android:background="@drawable/bg_input"
-            android:hint="内容（可选）"
+            android:hint="要发送的消息（必填），例：每周例会，请 10:00 前到会"
             android:gravity="top|start"
             android:minLines="3"
             android:padding="12dp"
@@ -84,6 +110,14 @@
             android:layout_marginTop="4dp"
             android:background="@drawable/bg_input"
             android:padding="8dp" />
+
+        <CheckBox
+            android:id="@+id/cbBroadcast"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="0dp"
+            android:visibility="gone"
+            android:text="" />
 
         <CheckBox
             android:id="@+id/cbUrgent"
@@ -111,10 +145,11 @@
             android:textColor="@color/brand"
             android:textSize="13sp" />
 
+        <!-- 保留兼容 chips 但隐藏（旧代码引用） -->
         <com.google.android.material.chip.ChipGroup
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp">
+            android:layout_height="0dp"
+            android:visibility="gone">
             <com.google.android.material.chip.Chip
                 android:id="@+id/chipIn30m"
                 android:layout_width="wrap_content"
@@ -140,16 +175,15 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
+            android:layout_marginTop="8dp"
             android:orientation="horizontal">
 
             <Button
                 android:id="@+id/btnPickTime"
-                style="?attr/materialButtonOutlinedStyle"
                 android:layout_width="0dp"
                 android:layout_weight="1"
                 android:layout_height="wrap_content"
-                android:text="自定义时间" />
+                android:text="📅 选择日期时间" />
 
             <Button
                 android:id="@+id/btnClearTime"

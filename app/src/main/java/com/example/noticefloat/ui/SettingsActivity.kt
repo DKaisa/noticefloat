@@ -20,36 +20,47 @@ class SettingsActivity : AppCompatActivity() {
         b = ActivitySettingsBinding.inflate(layoutInflater)
         setContentView(b.root)
         session = Session.get(this)
+        // v0.8.5 服务器地址内置为只读展示
         b.etServer.setText(session.serverUrl)
+        b.etServer.isEnabled = false
+        b.etServer.isFocusable = false
         b.etNick.setText(session.nickname)
         b.tvDeviceId.text = "设备 ID: ${session.deviceId}"
 
         b.btnSave.setOnClickListener {
-            val server = b.etServer.text?.toString()?.trim().orEmpty()
             val nick = b.etNick.text?.toString()?.trim().orEmpty()
-            if (server.isBlank() || nick.isBlank()) {
-                Toast.makeText(this, "服务器地址和昵称都需要填", Toast.LENGTH_SHORT).show()
+            if (nick.isBlank()) {
+                Toast.makeText(this, "昵称不能为空", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            val normalized = if (server.startsWith("http")) server else "http://$server"
-            session.serverUrl = normalized
             session.nickname = nick
             Toast.makeText(this, "已保存（重启悬浮窗服务生效）", Toast.LENGTH_LONG).show()
             finish()
         }
 
         b.btnTest.setOnClickListener {
-            val server = b.etServer.text?.toString()?.trim().orEmpty()
-            if (server.isBlank()) return@setOnClickListener
-            val temp = Session.get(this).also {
-                it.serverUrl = if (server.startsWith("http")) server else "http://$server"
-            }
             lifecycleScope.launch {
-                val ok = withContext(Dispatchers.IO) { runCatching { ApiClient(temp).health() }.getOrDefault(false) }
+                val ok = withContext(Dispatchers.IO) {
+                    runCatching { ApiClient(session).health() }.getOrDefault(false)
+                }
                 Toast.makeText(this@SettingsActivity,
                     if (ok) "✅ 连接成功" else "❌ 无法连接",
                     Toast.LENGTH_LONG).show()
             }
+        }
+
+        // 查角色显示
+        lifecycleScope.launch {
+            val r = withContext(Dispatchers.IO) {
+                runCatching { ApiClient(session).getRole() }.getOrNull()
+            }
+            val roleStr = r?.optString("role") ?: "user"
+            val desc = when (roleStr) {
+                "super" -> "🛡️ 超级管理员（硬编码）"
+                "admin" -> "🔑 管理员"
+                else -> "👤 普通用户"
+            }
+            b.tvDeviceId.text = "设备 ID: ${session.deviceId}\n角色: $desc"
         }
     }
 }
