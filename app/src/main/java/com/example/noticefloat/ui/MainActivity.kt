@@ -30,6 +30,13 @@ class MainActivity : AppCompatActivity() {
         b = ActivityMainBinding.inflate(layoutInflater)
         setContentView(b.root)
 
+        // v0.8.15 启动时静默从 GitHub raw 拉最新 cpolar URL（超时 5s，失败保持原值）
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                com.example.noticefloat.remote.Session.get(this@MainActivity).bootstrapServerUrl()
+            } catch (_: Exception) { /* ignore */ }
+        }
+
         b.btnOverlay.setOnClickListener { requestOverlay() }
         b.btnUsage.setOnClickListener { requestUsageAccess() }
         b.btnNotif.setOnClickListener { requestNotif() }

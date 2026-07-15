@@ -79,6 +79,12 @@ DB_PATH = os.path.join(DATA_DIR, "notice.db")
 # 内置默认后端 URL（cpolar tunnel，24h 变一次；用户可在 config.json 覆盖）
 DEFAULT_SERVER_URL = "https://78a8a5e6.r6.cpolar.cn"
 
+# v0.8.15 引导 URL：cpolar 免费版每天变 URL 太麻烦，改用 GitHub raw 存当前 URL。
+# 启动时先请求这个固定地址拿到最新 cpolar URL；请求失败则用 config 里的旧值。
+# 更新 cpolar URL 只需 push server_url.txt，客户端下次启动自动同步。
+BOOTSTRAP_URL = "https://raw.githubusercontent.com/DKaisa/noticefloat/main/server_url.txt"
+BOOTSTRAP_URL_JSDELIVR = "https://cdn.jsdelivr.net/gh/DKaisa/noticefloat@main/server_url.txt"
+
 
 def load_config() -> dict:
     if os.path.exists(CONFIG_PATH):
@@ -105,7 +111,39 @@ def save_config(cfg: dict) -> None:
         json.dump(cfg, f, ensure_ascii=False, indent=2)
 
 
+def _bootstrap_server_url(cfg: dict) -> None:
+    """v0.8.15 启动时从 GitHub raw 拉取最新的 cpolar URL 并覆盖 config。
+    先试 jsdelivr（国内 CDN 更快），失败再试 raw.githubusercontent.com。
+    失败则保持原 config 不变；成功且 URL 有变化才写回磁盘。"""
+    import requests as _req
+    for url in (BOOTSTRAP_URL_JSDELIVR, BOOTSTRAP_URL):
+        try:
+            r = _req.get(url, timeout=5)
+            if r.status_code != 200:
+                continue
+            new_url = (r.text or "").strip()
+            # 只接受形如 http/https 开头的一行
+            if not new_url or "\n" in new_url:
+                new_url = new_url.splitlines()[0].strip() if new_url else ""
+            if new_url.startswith(("http://", "https://")):
+                if new_url != (cfg.get("server_url") or "").strip():
+                    print(f"[bootstrap] server_url updated: {cfg.get('server_url')} -> {new_url}")
+                    cfg["server_url"] = new_url
+                    try:
+                        save_config(cfg)
+                    except Exception:
+                        pass
+                return
+        except Exception:
+            continue
+
+
 CONFIG = load_config()
+# 启动时静默尝试从 GitHub raw 拉一次最新 URL（不阻塞：超时 5s，失败保持原值）
+try:
+    _bootstrap_server_url(CONFIG)
+except Exception:
+    pass
 
 
 # ============================================================

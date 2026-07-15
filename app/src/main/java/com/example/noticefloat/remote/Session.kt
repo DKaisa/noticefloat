@@ -53,6 +53,42 @@ class Session private constructor(private val prefs: SharedPreferences) {
     val wsUrl: String
         get() = serverUrl.replaceFirst(Regex("^http"), "ws") + "/ws/$deviceId"
 
+    /**
+     * v0.8.15 从 GitHub raw 拉取最新的 cpolar URL，成功则覆盖 SharedPreferences。
+     * cpolar 免费版每天变 URL 太麻烦，改用固定的 GitHub raw 存当前 URL，
+     * cpolar 变了只需 push server_url.txt，客户端下次启动自动同步。
+     * 先试 jsdelivr（国内 CDN 更快），失败再试 raw.githubusercontent.com。
+     * 阻塞 IO，请在协程/后台线程调用。
+     */
+    fun bootstrapServerUrl(): Boolean {
+        val client = okhttp3.OkHttpClient.Builder()
+            .connectTimeout(5, java.util.concurrent.TimeUnit.SECONDS)
+            .readTimeout(5, java.util.concurrent.TimeUnit.SECONDS)
+            .build()
+        val urls = listOf(
+            "https://cdn.jsdelivr.net/gh/DKaisa/noticefloat@main/server_url.txt",
+            "https://raw.githubusercontent.com/DKaisa/noticefloat/main/server_url.txt",
+        )
+        for (u in urls) {
+            try {
+                val req = okhttp3.Request.Builder().url(u).get().build()
+                client.newCall(req).execute().use { resp ->
+                    if (!resp.isSuccessful) return@use
+                    val text = resp.body?.string().orEmpty()
+                    val newUrl = text.lineSequence().map { it.trim() }.firstOrNull { it.startsWith("http") }
+                    if (!newUrl.isNullOrBlank() && newUrl != serverUrl) {
+                        serverUrl = newUrl
+                        return true
+                    }
+                    if (!newUrl.isNullOrBlank()) return false
+                }
+            } catch (_: Exception) {
+                // 试下一个 URL
+            }
+        }
+        return false
+    }
+
     companion object {
         private const val PREFS = "notice_session"
         private const val KEY_DEVICE_ID = "device_id"
