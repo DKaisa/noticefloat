@@ -357,9 +357,11 @@ _SERVER_URL_FILE = _REPO_ROOT / "server_url.txt"
 
 
 def _extract_latest_cpolar_url() -> Optional[str]:
-    """从最近的 cpolar log 中提取最新一次 Tunnel established 的 https URL"""
+    """从最近的 cpolar log 中提取最新一次 Tunnel established 的 https URL。
+    v0.8.15.1 只读文件末尾 128KB，避免 log 变很大时全量入内存。"""
     import re as _re
     pattern = _re.compile(r'Tunnel established at (https://[a-z0-9]+\.r[0-9]\.cpolar\.cn)')
+    TAIL_BYTES = 128 * 1024
     try:
         logs = sorted(_CPOLAR_LOG_DIR.glob("cpolar.log*"),
                       key=lambda p: p.stat().st_mtime, reverse=True)
@@ -367,8 +369,11 @@ def _extract_latest_cpolar_url() -> Optional[str]:
         return None
     for lf in logs[:3]:
         try:
-            with open(lf, "r", encoding="utf-8", errors="ignore") as f:
-                content = f.read()
+            with open(lf, "rb") as f:
+                size = lf.stat().st_size
+                if size > TAIL_BYTES:
+                    f.seek(-TAIL_BYTES, 2)
+                content = f.read().decode("utf-8", errors="ignore")
         except Exception:
             continue
         matches = pattern.findall(content)
@@ -523,8 +528,24 @@ def list_my_groups(device_id: str):
 
 @app.get("/api/groups/discover")
 def discover_groups(device_id: str = ""):
-    """v0.8.15 列出全部群 + 我是否已加入。总量上限 MAX_GROUPS，超出提示同时返回。"""
+    """v0.8.15 列出全部群 + 我是否已加入。总量上限 MAX_GROUPS。
+    v0.8.15.1 权限收敛：为防止外部人拿到 cpolar URL 后暴力列表 + 无鉴权 join，
+      规则：调用方必须已经在至少 1 个群里；新用户必须先用邀请码入首群才能发现其他群。
+      对已加入的群，返回完整 code（用于置灰）；对未加入的群，返回 name+member_count，
+      code 打码为『****』，避免第三方直接拿 code 调 /api/groups/{code}/join。"""
+    if not device_id:
+        raise HTTPException(400, "缺少 device_id")
     with db() as c:
+        # 超管例外：允许无门槛列表（含真实 code）
+        is_super = device_id in SUPER_ADMINS
+        my_count = 0
+        if not is_super:
+            my_count = c.execute(
+                "SELECT COUNT(*) AS n FROM members WHERE device_id=?",
+                (device_id,),
+            ).fetchone()["n"]
+            if my_count == 0:
+                raise HTTPException(403, "请先通过邀请码加入至少一个群，之后才能发现其他群")
         rows = c.execute(
             """
             SELECT g.code, g.name, g.created_by, g.created_at,
@@ -539,9 +560,16 @@ def discover_groups(device_id: str = ""):
             """,
             (device_id,),
         ).fetchall()
+    groups = []
+    for r in rows:
+        d = dict(r)
+        # 未加入的群 code 打码，防止直接 join；已加入的返回真实 code 供客户端置灰对齐
+        if not is_super and not d["joined"]:
+            d["code"] = "****"
+        groups.append(d)
     return {
-        "groups": [dict(r) for r in rows],
-        "total": len(rows),
+        "groups": groups,
+        "total": len(groups),
         "max": MAX_GROUPS,
     }
 
@@ -553,6 +581,24 @@ def leave_group(code: str, req: AckReq):
             (code, req.device_id),
         )
     return {"ok": True}
+
+
+@app.delete("/api/groups/{code}")
+def delete_group(code: str, device_id: str = ""):
+    """v0.8.15.1 删群（仅超管可调用）。级联清 members/tasks/messages/recurring_tasks 等。
+    用于 MAX_GROUPS 到顶后的自助清理。"""
+    if not device_id:
+        raise HTTPException(400, "缺少 device_id")
+    require_super(device_id)
+    if code == "*":
+        raise HTTPException(400, "不可删除广播群")
+    with db() as c:
+        g = c.execute("SELECT code, name FROM groups WHERE code=?", (code,)).fetchone()
+        if not g:
+            raise HTTPException(404, "群号不存在")
+        # 外键 CASCADE 会自动清 members/tasks/task_acks/recurring_tasks/messages
+        c.execute("DELETE FROM groups WHERE code=?", (code,))
+    return {"ok": True, "code": code, "name": g["name"]}
 
 # -------- 任务 --------
 
@@ -876,10 +922,10 @@ def delete_recurring(rid: int, device_id: str):
 # ==================== v0.8.6 自动升级 ====================
 
 LATEST_APK_META = {
-    "versionCode": 23,
-    "versionName": "0.8.15",
-    "fileName": "勇冠三军提醒器-v0.8.15.apk",
-    "changelog": "v0.8.15：群 Tab 展示全部群列表（含未加入的），点击未加入项一键加入；创建/加入均带总量上限提示（当前 20 个）"
+    "versionCode": 24,
+    "versionName": "0.8.15.1",
+    "fileName": "勇冠三军提醒器-v0.8.15.1.apk",
+    "changelog": "v0.8.15.1：安全加固——server_url.txt 拉取加域名白名单，只接受 cpolar 域名，防止 GitHub 上被人换成恶意后端 URL"
 }
 
 @app.get("/api/latest_apk")
@@ -1015,10 +1061,10 @@ def admin_users(device_id: str):
 
 
 LATEST_PC_META = {
-    "versionCode": 15,
-    "versionName": "0.8.15",
-    "fileName": "勇冠三军提醒器PC-v0.8.15.exe",
-    "changelog": "v0.8.15：修复创群 422 报错；群 Tab 展示全部群+双击一键加入；新增自动升级机制（下载后弹文件夹手动双击安装）",
+    "versionCode": 16,
+    "versionName": "0.8.15.1",
+    "fileName": "勇冠三军提醒器PC-v0.8.15.1.exe",
+    "changelog": "v0.8.15.1 安全加固：discover 需先入群才可发现新群；升级包新增 SHA256 校验；server_url.txt 域名白名单防篡改劇持；新增删群接口防 20 群卡死",
 }
 
 
@@ -1031,15 +1077,30 @@ def pc_latest_redirect():
 
 @app.get("/api/latest_pc")
 def latest_pc():
-    """v0.8.15 PC 版启动时查询最新版本，用于自动升级"""
+    """v0.8.15 PC 版启动时查询最新版本，用于自动升级
+    v0.8.15.1 加 sha256 字段，PC 端下载后校验，防止升级链路被中间人替换"""
+    import hashlib as _hl
     fn = LATEST_PC_META["fileName"]
     fp = DOWNLOAD_DIR / fn
+    sha256 = ""
+    size = 0
+    if fp.exists():
+        size = fp.stat().st_size
+        try:
+            h = _hl.sha256()
+            with open(fp, "rb") as f:
+                for chunk in iter(lambda: f.read(1024 * 1024), b""):
+                    h.update(chunk)
+            sha256 = h.hexdigest()
+        except Exception:
+            sha256 = ""
     return {
         "versionCode": LATEST_PC_META["versionCode"],
         "versionName": LATEST_PC_META["versionName"],
         "fileName": fn,
         "url": f"/downloads/{fn}",
-        "size": fp.stat().st_size if fp.exists() else 0,
+        "size": size,
+        "sha256": sha256,
         "available": fp.exists(),
         "changelog": LATEST_PC_META["changelog"],
     }

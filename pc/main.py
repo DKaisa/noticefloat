@@ -33,8 +33,8 @@ except Exception:
 # ============================================================
 
 APP_NAME = "勇冠三军提醒器"
-APP_VERSION = "0.8.15"
-APP_VERSION_CODE = 15  # v0.8.15 用于自升级比较
+APP_VERSION = "0.8.15.1"
+APP_VERSION_CODE = 16  # v0.8.15 用于自升级比较
 DATA_DIR = os.path.join(os.environ.get("APPDATA") or os.path.expanduser("~"), "NoticeFloat")
 
 
@@ -114,26 +114,39 @@ def save_config(cfg: dict) -> None:
 def _bootstrap_server_url(cfg: dict) -> None:
     """v0.8.15 启动时从 GitHub raw 拉取最新的 cpolar URL 并覆盖 config。
     先试 jsdelivr（国内 CDN 更快），失败再试 raw.githubusercontent.com。
-    失败则保持原 config 不变；成功且 URL 有变化才写回磁盘。"""
+    失败则保持原 config 不变；成功且 URL 有变化才写回磁盘。
+    v0.8.15.1 加域名白名单：只接受 *.cpolar.cn / *.cpolar.io / localhost /
+      127.0.0.1，防止 server_url.txt 被篡改劫持客户端到恶意后端。"""
     import requests as _req
+    from urllib.parse import urlparse as _up
+    ALLOWED_SUFFIX = (".cpolar.cn", ".cpolar.io", ".cpolar.top")
+    ALLOWED_HOST = ("localhost", "127.0.0.1")
     for url in (BOOTSTRAP_URL_JSDELIVR, BOOTSTRAP_URL):
         try:
             r = _req.get(url, timeout=5)
             if r.status_code != 200:
                 continue
             new_url = (r.text or "").strip()
-            # 只接受形如 http/https 开头的一行
             if not new_url or "\n" in new_url:
                 new_url = new_url.splitlines()[0].strip() if new_url else ""
-            if new_url.startswith(("http://", "https://")):
-                if new_url != (cfg.get("server_url") or "").strip():
-                    print(f"[bootstrap] server_url updated: {cfg.get('server_url')} -> {new_url}")
-                    cfg["server_url"] = new_url
-                    try:
-                        save_config(cfg)
-                    except Exception:
-                        pass
-                return
+            if not new_url.startswith(("http://", "https://")):
+                continue
+            # 域名白名单校验
+            try:
+                host = (_up(new_url).hostname or "").lower()
+            except Exception:
+                continue
+            if not (host in ALLOWED_HOST or any(host.endswith(s) for s in ALLOWED_SUFFIX)):
+                print(f"[bootstrap] rejected untrusted host: {host}")
+                continue
+            if new_url != (cfg.get("server_url") or "").strip():
+                print(f"[bootstrap] server_url updated: {cfg.get('server_url')} -> {new_url}")
+                cfg["server_url"] = new_url
+                try:
+                    save_config(cfg)
+                except Exception:
+                    pass
+            return
         except Exception:
             continue
 
@@ -2078,6 +2091,30 @@ def _show_update_dialog(root: "tk.Tk", api: "Api", meta: dict) -> None:
                         state["downloading"] = False
                     run_on_ui(failed)
                     return
+                # v0.8.15.1 SHA256 校验：防止升级链路被中间人替换恶意 exe
+                expected_sha = (meta.get("sha256") or "").strip().lower()
+                if expected_sha:
+                    try:
+                        import hashlib as _hl
+                        h = _hl.sha256()
+                        with open(new_exe, "rb") as fh:
+                            for chunk in iter(lambda: fh.read(1024 * 1024), b""):
+                                h.update(chunk)
+                        actual_sha = h.hexdigest()
+                    except Exception:
+                        actual_sha = ""
+                    if actual_sha != expected_sha:
+                        def sha_failed():
+                            try:
+                                if os.path.exists(new_exe):
+                                    os.remove(new_exe)
+                            except Exception:
+                                pass
+                            status_var.set(f"⚠️ 文件校验失败（SHA256 不匹配），已删除。请重试或联系管理员。")
+                            btn_action.configure(text="重试下载", state="normal")
+                            state["downloading"] = False
+                        run_on_ui(sha_failed)
+                        return
                 def done():
                     state["downloading"] = False
                     state["downloaded"] = True

@@ -12,8 +12,8 @@ android {
         applicationId = "com.example.noticefloat"
         minSdk = 24
         targetSdk = 34
-        versionCode = 23
-        versionName = "0.8.15"
+        versionCode = 24
+        versionName = "0.8.15.1"
 
         // 后端公网 URL（cpolar tunnel，每 24h 变一次）
         val defaultServerUrl = "https://78a8a5e6.r6.cpolar.cn"
