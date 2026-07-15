@@ -5,6 +5,25 @@
 $ErrorActionPreference = 'SilentlyContinue'
 $root = 'D:\zhangkai_b\work\project\AI记录\NoticeFloat'
 
+# ---- 0. log rotate: 备份 backend 上次的 out.log/err.log，只保留最近 5 份 ----
+function Rotate-Log($file) {
+    if (Test-Path $file) {
+        $ts = (Get-Item $file).LastWriteTime.ToString('yyyyMMdd_HHmmss')
+        $rotated = "$file.$ts"
+        try { Rename-Item -Path $file -NewName (Split-Path $rotated -Leaf) -Force -EA Stop } catch {}
+    }
+    # 只保留最近 5 份 rotate 文件
+    $base = Split-Path $file -Leaf
+    $dir = Split-Path $file -Parent
+    Get-ChildItem $dir -Filter "$base.*" -EA SilentlyContinue |
+        Sort-Object LastWriteTime -Descending |
+        Select-Object -Skip 5 |
+        Remove-Item -Force -EA SilentlyContinue
+}
+
+Rotate-Log "$root\backend\out.log"
+Rotate-Log "$root\backend\err.log"
+
 # ---- 1. 启动 backend ----
 $backendRunning = Get-CimInstance Win32_Process -Filter "Name = 'python.exe'" |
     Where-Object { $_.CommandLine -like '*NoticeFloat*main.py*' }

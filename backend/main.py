@@ -907,28 +907,49 @@ LATEST_APK_META = {
     "changelog": "v0.8.15.1：安全加固——server_url.txt 拉取加域名白名单，只接受 cpolar 域名，防止 GitHub 上被人换成恶意后端 URL"
 }
 
+# v0.8.15.1 已发布 APK 版本表（新增一版只要追加一条 + 把 apk 放 downloads/）
+APK_VERSIONS = [
+    {"versionCode": 24, "versionName": "0.8.15.1",
+     "fileName": "勇冠三军提醒器-v0.8.15.1.apk",
+     "changelog": "v0.8.15.1：安全加固——server_url.txt 拉取加域名白名单，只接受 cpolar 域名"},
+    {"versionCode": 23, "versionName": "0.8.15",
+     "fileName": "勇冠三军提醒器-v0.8.15.apk",
+     "changelog": "v0.8.15：群 Tab 展示全部群列表；创建/加入均带总量上限提示（当前 20 个）"},
+]
+
+
+def _pick_latest(versions: list[dict]) -> dict:
+    """从 versions 列表中挑 versionCode 最大且 downloads/ 里实际存在的那一版。
+    找不到就 fallback 到列表首位（应始终存在）。"""
+    for v in sorted(versions, key=lambda x: x["versionCode"], reverse=True):
+        if (DOWNLOAD_DIR / v["fileName"]).exists():
+            return v
+    return versions[0]
+
 @app.get("/api/latest_apk")
 def latest_apk():
-    """APK 启动时查询最新版本；latestCode > 本地 versionCode 就提示升级"""
-    fn = LATEST_APK_META["fileName"]
+    """APK 启动时查询最新版本；latestCode > 本地 versionCode 就提示升级
+    v0.8.15.1 改为从 APK_VERSIONS 表自动挑最高版本"""
+    meta = _pick_latest(APK_VERSIONS)
+    fn = meta["fileName"]
     fp = DOWNLOAD_DIR / fn
     exists = fp.exists()
     size = fp.stat().st_size if exists else 0
     return {
-        "versionCode": LATEST_APK_META["versionCode"],
-        "versionName": LATEST_APK_META["versionName"],
+        "versionCode": meta["versionCode"],
+        "versionName": meta["versionName"],
         "url": f"/downloads/{fn}",
         "size": size,
         "available": exists,
-        "changelog": LATEST_APK_META["changelog"],
+        "changelog": meta["changelog"],
     }
 
 
 @app.get("/apk/latest")
 def apk_latest_redirect():
-    """v0.8.10 永久链接：始终 302 到当前 LATEST_APK_META 指向的 apk 文件。
+    """v0.8.10 永久链接：始终 302 到当前最新 apk 文件。
     用于对外分享给群友，每次点击都拿到最新版本，无需修改链接。"""
-    fn = LATEST_APK_META["fileName"]
+    fn = _pick_latest(APK_VERSIONS)["fileName"]
     return RedirectResponse(url=f"/downloads/{fn}", status_code=302)
 
 
@@ -1046,20 +1067,38 @@ LATEST_PC_META = {
     "changelog": "v0.8.15.1 安全加固：discover 需先入群才可发现新群；升级包新增 SHA256 校验；server_url.txt 域名白名单防篡改劇持；新增删群接口防 20 群卡死",
 }
 
+# v0.8.15.1 已发布 PC 版本表（新增一版只要追加一条 + 把 exe 放 downloads/）
+PC_VERSIONS = [
+    {"versionCode": 16, "versionName": "0.8.15.1",
+     "fileName": "勇冠三军提醒器PC-v0.8.15.1.exe",
+     "changelog": "v0.8.15.1 安全加固：升级包新增 SHA256 校验；server_url.txt 域名白名单防篡改劫持；新增删群接口防 20 群卡死"},
+    {"versionCode": 15, "versionName": "0.8.15",
+     "fileName": "勇冠三军提醒器PC-v0.8.15.exe",
+     "changelog": "v0.8.15：修复创群 422 报错；群 Tab 展示全部群+双击一键加入；新增自动升级机制"},
+    {"versionCode": 14, "versionName": "0.8.14",
+     "fileName": "勇冠三军提醒器PC-v0.8.14.exe",
+     "changelog": "v0.8.14：Windows 单实例锁，避免重复双击"},
+    {"versionCode": 10, "versionName": "0.8.10",
+     "fileName": "勇冠三军提醒器PC-v0.8.10.exe",
+     "changelog": "v0.8.10：管理员/超管三级角色"},
+]
+
 
 @app.get("/pc/latest")
 def pc_latest_redirect():
-    """v0.8.10 PC 版永久下载链接：302 到当前 LATEST_PC_META 指向的 exe。"""
-    fn = LATEST_PC_META["fileName"]
+    """v0.8.10 PC 版永久下载链接：302 到当前最新 exe。"""
+    fn = _pick_latest(PC_VERSIONS)["fileName"]
     return RedirectResponse(url=f"/downloads/{fn}", status_code=302)
 
 
 @app.get("/api/latest_pc")
 def latest_pc():
     """v0.8.15 PC 版启动时查询最新版本，用于自动升级
-    v0.8.15.1 加 sha256 字段，PC 端下载后校验，防止升级链路被中间人替换"""
+    v0.8.15.1 加 sha256 字段，PC 端下载后校验，防止升级链路被中间人替换
+    v0.8.15.1 改为从 PC_VERSIONS 表自动挑最高版本"""
     import hashlib as _hl
-    fn = LATEST_PC_META["fileName"]
+    meta = _pick_latest(PC_VERSIONS)
+    fn = meta["fileName"]
     fp = DOWNLOAD_DIR / fn
     sha256 = ""
     size = 0
@@ -1074,14 +1113,14 @@ def latest_pc():
         except Exception:
             sha256 = ""
     return {
-        "versionCode": LATEST_PC_META["versionCode"],
-        "versionName": LATEST_PC_META["versionName"],
+        "versionCode": meta["versionCode"],
+        "versionName": meta["versionName"],
         "fileName": fn,
         "url": f"/downloads/{fn}",
         "size": size,
         "sha256": sha256,
         "available": fp.exists(),
-        "changelog": LATEST_PC_META["changelog"],
+        "changelog": meta["changelog"],
     }
 
 
