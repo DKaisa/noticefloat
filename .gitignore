@@ -29,6 +29,7 @@ Thumbs.db
 # 本地敏感/临时
 *.local
 *.log
+*.log.*
 
 # 发布产物（放在服务器/发行渠道，不进 git）
 *.apk
