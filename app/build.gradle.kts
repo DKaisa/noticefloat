@@ -16,7 +16,7 @@ android {
         versionName = "0.8.15"
 
         // 后端公网 URL（cpolar tunnel，每 24h 变一次）
-        val defaultServerUrl = "https://2e1acc7c.r6.cpolar.cn"
+        val defaultServerUrl = "https://78a8a5e6.r6.cpolar.cn"
         buildConfigField("String", "DEFAULT_SERVER_URL", "\"$defaultServerUrl\"")
     }
 

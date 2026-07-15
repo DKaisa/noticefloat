@@ -77,7 +77,7 @@ IS_FIRST_RUN = not os.path.exists(CONFIG_PATH)
 DB_PATH = os.path.join(DATA_DIR, "notice.db")
 
 # 内置默认后端 URL（cpolar tunnel，24h 变一次；用户可在 config.json 覆盖）
-DEFAULT_SERVER_URL = "https://2e1acc7c.r6.cpolar.cn"
+DEFAULT_SERVER_URL = "https://78a8a5e6.r6.cpolar.cn"
 
 
 def load_config() -> dict:
