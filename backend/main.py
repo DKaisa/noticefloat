@@ -347,10 +347,78 @@ async def broadcast_task_done(code: str, task_id: int, by_device: str, by_name: 
 
 # ==================== 应用 ====================
 
+# v0.8.15 后台线程：自动同步 cpolar tunnel URL 到 GitHub server_url.txt
+# 免费版 cpolar 每天变 URL 太麻烦，改由 backend 定时监控本地 cpolar log，
+# URL 变了自动 write server_url.txt + git add/commit/push；
+# 客户端只从 GitHub raw 拉 server_url.txt，无需重打包。
+_REPO_ROOT = Path(__file__).resolve().parent.parent
+_CPOLAR_LOG_DIR = _REPO_ROOT / "cpolar"
+_SERVER_URL_FILE = _REPO_ROOT / "server_url.txt"
+
+
+def _extract_latest_cpolar_url() -> Optional[str]:
+    """从最近的 cpolar log 中提取最新一次 Tunnel established 的 https URL"""
+    import re as _re
+    pattern = _re.compile(r'Tunnel established at (https://[a-z0-9]+\.r[0-9]\.cpolar\.cn)')
+    try:
+        logs = sorted(_CPOLAR_LOG_DIR.glob("cpolar.log*"),
+                      key=lambda p: p.stat().st_mtime, reverse=True)
+    except Exception:
+        return None
+    for lf in logs[:3]:
+        try:
+            with open(lf, "r", encoding="utf-8", errors="ignore") as f:
+                content = f.read()
+        except Exception:
+            continue
+        matches = pattern.findall(content)
+        if matches:
+            return matches[-1]
+    return None
+
+
+def _sync_cpolar_url_loop():
+    """后台线程：每 5 分钟检查一次；URL 变了 → 更新 server_url.txt + git push"""
+    import subprocess as _sp
+    while True:
+        try:
+            new_url = _extract_latest_cpolar_url()
+            if new_url and _SERVER_URL_FILE.exists():
+                current = _SERVER_URL_FILE.read_text(encoding="utf-8").strip()
+                if new_url != current:
+                    print(f"[url-sync] cpolar URL changed: {current} -> {new_url}", flush=True)
+                    _SERVER_URL_FILE.write_text(new_url + "\n", encoding="utf-8")
+                    try:
+                        _sp.run(["git", "-C", str(_REPO_ROOT), "add", "server_url.txt"],
+                                check=True, timeout=10, capture_output=True)
+                        _sp.run(["git", "-C", str(_REPO_ROOT), "commit", "--no-verify",
+                                 "-m", f"chore(auto): cpolar URL -> {new_url}"],
+                                check=True, timeout=10, capture_output=True)
+                        r = _sp.run(["git", "-C", str(_REPO_ROOT), "push", "origin", "main"],
+                                    timeout=30, capture_output=True, text=True)
+                        if r.returncode == 0:
+                            print(f"[url-sync] git push OK", flush=True)
+                        else:
+                            print(f"[url-sync] git push failed: {r.stderr.strip()[:200]}", flush=True)
+                    except _sp.CalledProcessError as e:
+                        # commit 可能因"nothing to commit"失败，忽略
+                        err = (e.stderr.decode(errors="ignore") if e.stderr else "").strip()[:200]
+                        print(f"[url-sync] git op failed (rc={e.returncode}): {err}", flush=True)
+                    except Exception as e:
+                        print(f"[url-sync] git op error: {e}", flush=True)
+        except Exception as e:
+            print(f"[url-sync] loop error: {e}", flush=True)
+        time.sleep(300)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
     task = asyncio.create_task(scheduler_loop())
+    # v0.8.15 启动 cpolar URL 自动同步线程
+    import threading as _th
+    _th.Thread(target=_sync_cpolar_url_loop, daemon=True, name="cpolar-url-sync").start()
+    print("[url-sync] background thread started (checks every 5min)", flush=True)
     try:
         yield
     finally:
