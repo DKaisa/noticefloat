@@ -529,23 +529,9 @@ def list_my_groups(device_id: str):
 @app.get("/api/groups/discover")
 def discover_groups(device_id: str = ""):
     """v0.8.15 列出全部群 + 我是否已加入。总量上限 MAX_GROUPS。
-    v0.8.15.1 权限收敛：为防止外部人拿到 cpolar URL 后暴力列表 + 无鉴权 join，
-      规则：调用方必须已经在至少 1 个群里；新用户必须先用邀请码入首群才能发现其他群。
-      对已加入的群，返回完整 code（用于置灰）；对未加入的群，返回 name+member_count，
-      code 打码为『****』，避免第三方直接拿 code 调 /api/groups/{code}/join。"""
-    if not device_id:
-        raise HTTPException(400, "缺少 device_id")
+    宗旨：装上即用，不做鉴权门槛。任何知道后端地址的客户端都能列群+加入。
+    （风险已知：backend URL = cpolar tunnel URL，语义上属半公开）"""
     with db() as c:
-        # 超管例外：允许无门槛列表（含真实 code）
-        is_super = device_id in SUPER_ADMINS
-        my_count = 0
-        if not is_super:
-            my_count = c.execute(
-                "SELECT COUNT(*) AS n FROM members WHERE device_id=?",
-                (device_id,),
-            ).fetchone()["n"]
-            if my_count == 0:
-                raise HTTPException(403, "请先通过邀请码加入至少一个群，之后才能发现其他群")
         rows = c.execute(
             """
             SELECT g.code, g.name, g.created_by, g.created_at,
@@ -560,16 +546,9 @@ def discover_groups(device_id: str = ""):
             """,
             (device_id,),
         ).fetchall()
-    groups = []
-    for r in rows:
-        d = dict(r)
-        # 未加入的群 code 打码，防止直接 join；已加入的返回真实 code 供客户端置灰对齐
-        if not is_super and not d["joined"]:
-            d["code"] = "****"
-        groups.append(d)
     return {
-        "groups": groups,
-        "total": len(groups),
+        "groups": [dict(r) for r in rows],
+        "total": len(rows),
         "max": MAX_GROUPS,
     }
 
