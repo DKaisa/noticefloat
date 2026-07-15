@@ -33,8 +33,8 @@ except Exception:
 # ============================================================
 
 APP_NAME = "勇冠三军提醒器"
-APP_VERSION = "0.8.15.1"
-APP_VERSION_CODE = 16  # v0.8.15 用于自升级比较
+APP_VERSION = "0.8.15.2"
+APP_VERSION_CODE = 17  # v0.8.15 用于自升级比较
 DATA_DIR = os.path.join(os.environ.get("APPDATA") or os.path.expanduser("~"), "NoticeFloat")
 
 
@@ -1994,6 +1994,12 @@ def _perform_self_update(api: "Api", meta: dict) -> bool:
         )
         with open(bat_path, "w", encoding="gbk", errors="replace", newline="") as f:
             f.write(bat_content)
+        # v0.8.15.2 标记本次升级来源，新版启动时会弹窗提示"升级成功"
+        try:
+            CONFIG["pending_upgrade_from"] = APP_VERSION
+            save_config(CONFIG)
+        except Exception:
+            pass
         # 释放单实例互斥体
         _release_single_instance_lock()
         # 启动 bat 隐藏窗口 + 脱离当前进程
@@ -2357,8 +2363,25 @@ def main() -> None:
     if CONFIG.get("server_url"):
         ws.start()
     # v0.8.14：首次运行一律弹主窗口（避免用户双击exe看不到反应）
-    if IS_FIRST_RUN or not CONFIG.get("server_url"):
+    # v0.8.15.2：升级后启动也弹主窗口 + 提示升级成功，让用户看到"升级到新版了"
+    just_upgraded_from = CONFIG.pop("pending_upgrade_from", None)
+    if just_upgraded_from:
+        try:
+            save_config(CONFIG)
+        except Exception:
+            pass
+    if IS_FIRST_RUN or not CONFIG.get("server_url") or just_upgraded_from:
         win.show()
+    if just_upgraded_from:
+        def _notify_upgraded():
+            try:
+                messagebox.showinfo(
+                    APP_NAME,
+                    f"升级成功！\n\nv{just_upgraded_from} → v{APP_VERSION}",
+                )
+            except Exception:
+                pass
+        run_on_ui(_notify_upgraded)
 
     # v0.8.15：启动后 5 秒后台检查升级（不阻塞 UI）
     def _delayed_update_check():

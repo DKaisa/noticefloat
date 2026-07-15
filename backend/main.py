@@ -1069,6 +1069,9 @@ LATEST_PC_META = {
 
 # v0.8.15.1 已发布 PC 版本表（新增一版只要追加一条 + 把 exe 放 downloads/）
 PC_VERSIONS = [
+    {"versionCode": 17, "versionName": "0.8.15.2",
+     "fileName": "勇冠三军提醒器PC-v0.8.15.2.exe",
+     "changelog": "v0.8.15.2 升级 UX：新版启动后自动弹主窗与『升级成功』提示，不用再去托盘点图标"},
     {"versionCode": 16, "versionName": "0.8.15.1",
      "fileName": "勇冠三军提醒器PC-v0.8.15.1.exe",
      "changelog": "v0.8.15.1 安全加固：升级包新增 SHA256 校验；server_url.txt 域名白名单防篡改劫持；新增删群接口防 20 群卡死"},
